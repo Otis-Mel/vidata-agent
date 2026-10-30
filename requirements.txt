@@ -1,0 +1,6 @@
+duckdb>=1.0
+pandas>=2.0
+numpy>=1.26
+python-dotenv
+google-genai
+streamlit>=1.35

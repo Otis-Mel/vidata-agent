@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+data/*.duckdb
+.idea/
+.vscode/
+
+data/.llm_cache/
+eval/results_before_patch/

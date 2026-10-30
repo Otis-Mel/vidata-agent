@@ -1,0 +1,742 @@
+{
+  "summary": {
+    "name": "p0_baseline_run2_dev",
+    "model": "gemini-3.8-flash",
+    "preset": "p0_baseline",
+    "n": 36,
+    "execution_accuracy": 0.9285714285714286,
+    "exec_error_rate": 0.0,
+    "wrong_result_rate": 0.0,
+    "ambiguous_accuracy": 0.5,
+    "out_of_scope_accuracy": 1.0,
+    "avg_attempts": 1.0,
+    "avg_latency_s": 7.6305555555555555,
+    "avg_in_tokens": 1002.9722222222222,
+    "avg_out_tokens": 778.0,
+    "llm_stats": {
+      "calls": 36,
+      "cache_hits": 0,
+      "retries": 0,
+      "in_tokens": 36107,
+      "out_tokens": 28008,
+      "latency_s": 274.71415305137634
+    },
+    "by_difficulty": {
+      "easy": {
+        "acc": 1.0,
+        "n": 7
+      },
+      "medium": {
+        "acc": 0.9166666666666666,
+        "n": 12
+      },
+      "hard": {
+        "acc": 0.8888888888888888,
+        "n": 9
+      }
+    },
+    "by_trap": {
+      "province_variants": {
+        "acc": 0.3333333333333333,
+        "n": 3
+      },
+      "no_join_needed": {
+        "acc": 1.0,
+        "n": 1
+      },
+      "denominator_definition": {
+        "acc": 1.0,
+        "n": 2
+      },
+      "timezone": {
+        "acc": 1.0,
+        "n": 10
+      },
+      "status_filter": {
+        "acc": 0.9090909090909091,
+        "n": 11
+      },
+      "join_fanout": {
+        "acc": 1.0,
+        "n": 2
+      },
+      "window_function": {
+        "acc": 1.0,
+        "n": 1
+      },
+      "cohort": {
+        "acc": 1.0,
+        "n": 1
+      },
+      "price_at_purchase": {
+        "acc": 1.0,
+        "n": 1
+      }
+    }
+  },
+  "records": [
+    {
+      "id": "e01",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu khách hàng đã đăng ký tài khoản?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_customers\nFROM customers;",
+      "gold_sql": "SELECT COUNT(*) FROM customers",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 988,
+      "out_tokens": 215,
+      "latency_s": 3.66
+    },
+    {
+      "id": "e02",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu đơn hàng bị hủy?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) FROM orders WHERE status = 'cancelled';",
+      "gold_sql": "SELECT COUNT(*) FROM orders WHERE status = 'cancelled'",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 985,
+      "out_tokens": 173,
+      "latency_s": 3.79
+    },
+    {
+      "id": "m02",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "province_variants"
+      ],
+      "question": "5 tỉnh/thành có nhiều đơn hoàn thành nhất, tính cả khách ghi tên tỉnh theo nhiều cách khác nhau?",
+      "correct": false,
+      "reason": "từ chối nhầm (cannot_answer): Cơ sở dữ liệu không có bảng danh mục hoặc quy tắc chuẩn hóa tên tỉnh/thành để ánh xạ các cách viết khác nhau.",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": "WITH n AS (SELECT c.customer_id, CASE WHEN c.province IN ('TP. Hồ Chí Minh','HCM','TP.HCM','Sài Gòn','Ho Chi Minh') THEN 'TP. Hồ Chí Minh' WHEN c.province IN ('Hà Nội','HN','Ha Noi','Hanoi') THEN 'Hà Nội' ELSE c.province END AS prov FROM customers c) SELECT n.prov, COUNT(*) AS so_don FROM orders o JOIN n USING(customer_id) WHERE o.status='completed' GROUP BY n.prov ORDER BY so_don DESC LIMIT 5",
+      "message": "Cơ sở dữ liệu không có bảng danh mục hoặc quy tắc chuẩn hóa tên tỉnh/thành để ánh xạ các cách viết khác nhau.",
+      "attempts": 1,
+      "in_tokens": 1001,
+      "out_tokens": 1354,
+      "latency_s": 14.26
+    },
+    {
+      "id": "m03",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "no_join_needed"
+      ],
+      "question": "Tổng số tiền đã thu thành công (status = paid) theo từng phương thức thanh toán là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    method,\n    SUM(amount) AS total_amount\nFROM payments\nWHERE status = 'paid'\nGROUP BY method;",
+      "gold_sql": "SELECT method, SUM(amount) AS tong FROM payments WHERE status='paid' GROUP BY method ORDER BY tong DESC",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 999,
+      "out_tokens": 207,
+      "latency_s": 3.75
+    },
+    {
+      "id": "h02",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "denominator_definition"
+      ],
+      "question": "Tỉ lệ phần trăm (làm tròn 2 chữ số) đơn bị hoàn trả (returned) trên tổng số đơn đã giao xong (completed + returned) của từng hãng vận chuyển.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    s.carrier,\n    ROUND(\n        COUNT(DISTINCT CASE WHEN o.status = 'returned' THEN o.order_id END) * 100.0 \n        / COUNT(DISTINCT o.order_id), \n        2\n    ) AS return_rate_pct\nFROM shipments s\nJOIN orders o ON s.order_id = o.order_id\nWHERE o.status IN ('completed', 'returned')\nGROUP BY s.carrier;",
+      "gold_sql": "SELECT s.carrier, ROUND(100.0*SUM(CASE WHEN o.status='returned' THEN 1 ELSE 0 END)/COUNT(*),2) AS ty_le_hoan_pct FROM shipments s JOIN orders o USING(order_id) WHERE o.status IN ('completed','returned') GROUP BY s.carrier ORDER BY ty_le_hoan_pct DESC",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1016,
+      "out_tokens": 1177,
+      "latency_s": 11.11
+    },
+    {
+      "id": "a01",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Doanh thu tháng trước là bao nhiêu?",
+      "correct": false,
+      "reason": "không hỏi làm rõ (behavior=answer)",
+      "behavior": "answer",
+      "pred_sql": "SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS revenue\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nWHERE o.status = 'completed'\n  AND date_trunc('month', o.order_ts + INTERVAL 7 HOUR) = '2026-09-01';",
+      "gold_sql": null,
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 986,
+      "out_tokens": 3056,
+      "latency_s": 25.89
+    },
+    {
+      "id": "e03",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Hệ thống hiện có tổng cộng bao nhiêu sản phẩm?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_products\nFROM products;",
+      "gold_sql": "SELECT COUNT(*) FROM products",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 989,
+      "out_tokens": 189,
+      "latency_s": 3.15
+    },
+    {
+      "id": "e04",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu shop là shop Mall?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS mall_shop_count\nFROM sellers\nWHERE is_mall = TRUE;",
+      "gold_sql": "SELECT COUNT(*) FROM sellers WHERE is_mall",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 985,
+      "out_tokens": 204,
+      "latency_s": 3.56
+    },
+    {
+      "id": "e06",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu voucher giảm theo phần trăm?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_vouchers\nFROM vouchers\nWHERE discount_type = 'percent';",
+      "gold_sql": "SELECT COUNT(*) FROM vouchers WHERE discount_type='percent'",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 986,
+      "out_tokens": 225,
+      "latency_s": 2.9
+    },
+    {
+      "id": "e07",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Điểm đánh giá trung bình (số sao) của tất cả các review là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT AVG(rating) AS avg_rating\nFROM reviews;",
+      "gold_sql": "SELECT AVG(rating) FROM reviews",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 996,
+      "out_tokens": 163,
+      "latency_s": 3.81
+    },
+    {
+      "id": "e09",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu danh mục gốc (không có danh mục cha)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_root_categories\nFROM categories\nWHERE parent_id IS NULL;",
+      "gold_sql": "SELECT COUNT(*) FROM categories WHERE parent_id IS NULL",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 990,
+      "out_tokens": 161,
+      "latency_s": 3.04
+    },
+    {
+      "id": "m04",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Mỗi hãng vận chuyển đã giao thành công (shipment status = delivered) bao nhiêu đơn? Xếp giảm dần theo số đơn.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT\n    carrier,\n    COUNT(DISTINCT order_id) AS total_delivered_orders\nFROM shipments\nWHERE status = 'delivered'\nGROUP BY carrier\nORDER BY total_delivered_orders DESC;",
+      "gold_sql": "SELECT carrier, COUNT(*) AS n FROM shipments WHERE status='delivered' GROUP BY carrier ORDER BY n DESC, carrier",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1005,
+      "out_tokens": 407,
+      "latency_s": 7.6
+    },
+    {
+      "id": "m06",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Có bao nhiêu đơn hoàn thành được đặt trong ngày 11/11/2025 theo giờ Việt Nam?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS completed_orders_count\nFROM orders\nWHERE status = 'completed'\n  AND (order_ts + INTERVAL 7 HOUR)::DATE = DATE '2025-11-11';",
+      "gold_sql": "SELECT COUNT(*) FROM orders o WHERE o.status='completed' AND CAST((o.order_ts + INTERVAL 7 HOUR) AS DATE)=DATE '2025-11-11'",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1003,
+      "out_tokens": 583,
+      "latency_s": 5.25
+    },
+    {
+      "id": "m07",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone"
+      ],
+      "question": "Trong năm 2025 (giờ Việt Nam), có bao nhiêu đơn (mọi trạng thái) được đặt trong khung 20:00 đến 22:59?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_orders\nFROM orders\nWHERE EXTRACT(YEAR FROM order_ts + INTERVAL 7 HOUR) = 2025\n  AND EXTRACT(HOUR FROM order_ts + INTERVAL 7 HOUR) BETWEEN 20 AND 22;",
+      "gold_sql": "SELECT COUNT(*) FROM orders o WHERE YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 AND HOUR((o.order_ts + INTERVAL 7 HOUR)) BETWEEN 20 AND 22",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1017,
+      "out_tokens": 665,
+      "latency_s": 7.45
+    },
+    {
+      "id": "m09",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "province_variants"
+      ],
+      "question": "Có bao nhiêu khách hàng ở Hà Nội (tính cả các cách ghi tên khác)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS total_customers\nFROM customers\nWHERE province ILIKE '%hà nội%'\n   OR province ILIKE '%ha noi%'\n   OR province ILIKE '%hanoi%'\n   OR UPPER(TRIM(province)) = 'HN';",
+      "gold_sql": "SELECT COUNT(*) FROM customers WHERE province IN ('Hà Nội','HN','Ha Noi','Hanoi')",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 995,
+      "out_tokens": 897,
+      "latency_s": 9.63
+    },
+    {
+      "id": "m10",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "denominator_definition"
+      ],
+      "question": "Trong năm 2025 (giờ Việt Nam), tỉ lệ phần trăm đơn bị hủy trên tổng số đơn đã có kết quả cuối (completed, cancelled, returned) là bao nhiêu? Làm tròn 2 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    ROUND(100.0 * COUNT(CASE WHEN status = 'cancelled' THEN 1 END) / COUNT(*), 2) AS cancellation_rate\nFROM orders\nWHERE status IN ('completed', 'cancelled', 'returned')\n  AND EXTRACT(YEAR FROM order_ts + INTERVAL 7 HOUR) = 2025;",
+      "gold_sql": "SELECT ROUND(100.0*SUM(CASE WHEN o.status='cancelled' THEN 1 ELSE 0 END)/COUNT(*),2) FROM orders o WHERE o.status IN ('completed','cancelled','returned') AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1023,
+      "out_tokens": 988,
+      "latency_s": 8.3
+    },
+    {
+      "id": "m12",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Trong năm 2026 (giờ Việt Nam), có bao nhiêu đơn không bị hủy có áp dụng voucher?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) \nFROM orders\nWHERE status != 'cancelled'\n  AND voucher_id IS NOT NULL\n  AND EXTRACT(YEAR FROM order_ts + INTERVAL 7 HOUR) = 2026;",
+      "gold_sql": "SELECT COUNT(*) FROM orders o WHERE o.voucher_id IS NOT NULL AND o.status<>'cancelled' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2026",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1001,
+      "out_tokens": 677,
+      "latency_s": 7.25
+    },
+    {
+      "id": "m13",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "status_filter"
+      ],
+      "question": "10 shop (seller_id) bán được nhiều sản phẩm nhất (tổng quantity) trong các đơn hoàn thành. Nếu bằng nhau lấy seller_id nhỏ hơn.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    p.seller_id,\n    SUM(oi.quantity) AS total_quantity\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN products p ON oi.product_id = p.product_id\nWHERE o.status = 'completed'\nGROUP BY p.seller_id\nORDER BY total_quantity DESC, p.seller_id ASC\nLIMIT 10;",
+      "gold_sql": "SELECT p.seller_id, SUM(oi.quantity) AS qty FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON p.product_id=oi.product_id WHERE o.status='completed' GROUP BY p.seller_id ORDER BY qty DESC, p.seller_id LIMIT 10",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1012,
+      "out_tokens": 887,
+      "latency_s": 7.57
+    },
+    {
+      "id": "m15",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "status_filter"
+      ],
+      "question": "Có bao nhiêu khách hàng có đúng 1 đơn hoàn thành?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT count(*) AS customer_count\nFROM (\n    SELECT customer_id\n    FROM orders\n    WHERE status = 'completed'\n    GROUP BY customer_id\n    HAVING count(*) = 1\n) AS sub;",
+      "gold_sql": "SELECT COUNT(*) FROM (SELECT customer_id FROM orders WHERE status='completed' GROUP BY customer_id HAVING COUNT(*)=1)",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 990,
+      "out_tokens": 350,
+      "latency_s": 3.98
+    },
+    {
+      "id": "m16",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Phí ship trung bình của đơn hoàn thành theo từng năm (giờ Việt Nam), làm tròn 0 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    EXTRACT(YEAR FROM order_ts + INTERVAL '7 hour') AS order_year,\n    ROUND(AVG(shipping_fee)) AS avg_shipping_fee\nFROM orders\nWHERE status = 'completed'\nGROUP BY 1\nORDER BY 1;",
+      "gold_sql": "SELECT YEAR((o.order_ts + INTERVAL 7 HOUR)) AS nam, ROUND(AVG(o.shipping_fee),0) AS phi_ship_tb FROM orders o WHERE o.status='completed' GROUP BY 1 ORDER BY 1",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1001,
+      "out_tokens": 510,
+      "latency_s": 5.34
+    },
+    {
+      "id": "m18",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Có bao nhiêu khách hàng đã đăng ký nhưng chưa từng đặt đơn nào (mọi trạng thái)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS unpurchased_customers\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id\nWHERE o.order_id IS NULL;",
+      "gold_sql": "SELECT COUNT(*) FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id=c.customer_id)",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 997,
+      "out_tokens": 313,
+      "latency_s": 4.49
+    },
+    {
+      "id": "h03",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "join_fanout",
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Theo từng tháng của năm 2025 (giờ Việt Nam), với các đơn hoàn thành: tổng tiền hàng và tổng số tiền thu thành công (payments.status = paid). Cột tháng trả về dạng YYYY-MM.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH completed_orders AS (\n    SELECT \n        order_id,\n        strftime(order_ts + INTERVAL 7 HOUR, '%Y-%m') AS month\n    FROM orders\n    WHERE status = 'completed'\n      AND order_ts + INTERVAL 7 HOUR >= TIMESTAMP '2025-01-01 00:00:00'\n      AND order_ts + INTERVAL 7 HOUR < TIMESTAMP '2026-01-01 00:00:00'\n),\nmonthly_items AS (\n    SELECT \n        co.month,\n        SUM(oi.quantity * oi.unit_price) AS total_merchandise_amount\n    FROM completed_orders co\n    JOIN order_items oi ON co.order_id = oi.order_id\n    GROUP BY co.month\n),\nmonthly_payments AS (\n    SELECT \n        co.month,\n        SUM(p.amount) AS total_paid_amount\n    FROM completed_orders co\n    JOIN payments p ON co.order_id = p.order_id\n    WHERE p.status = 'paid'\n    GROUP BY co.month\n)\nSELECT \n    m.month,\n    COALESCE(i.total_merchandise_amount, 0) AS total_merchandise_amount,\n    COALESCE(p.total_paid_amount, 0) AS total_paid_amount\nFROM (SELECT DISTINCT month FROM completed_orders) m\nLEFT JOIN monthly_items i ON m.month = i.month\nLEFT JOIN monthly_payments p ON m.month = p.month\nORDER BY m.month;",
+      "gold_sql": "WITH g AS (SELECT order_id, SUM(quantity*unit_price) AS goods FROM order_items GROUP BY order_id), pay AS (SELECT order_id, SUM(amount) AS paid FROM payments WHERE status='paid' GROUP BY order_id) SELECT DATE_TRUNC('month', (o.order_ts + INTERVAL 7 HOUR)) AS thang, SUM(g.goods) AS tien_hang, SUM(pay.paid) AS da_thu FROM orders o JOIN g ON g.order_id=o.order_id LEFT JOIN pay ON pay.order_id=o.order_id WHERE o.status='completed' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 GROUP BY 1 ORDER BY 1",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1027,
+      "out_tokens": 1859,
+      "latency_s": 13.87
+    },
+    {
+      "id": "h05",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "window_function",
+        "status_filter"
+      ],
+      "question": "Với các đơn hoàn thành trong năm 2025 (giờ Việt Nam), trả về số quý (1-4), tiền hàng của quý đó và phần trăm tăng trưởng so với quý liền trước làm tròn 2 chữ số. Chỉ xét các quý trong năm 2025 nên quý 1 có tăng trưởng NULL.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH quarterly_revenue AS (\n    SELECT\n        EXTRACT(QUARTER FROM o.order_ts + INTERVAL 7 HOUR)::INTEGER AS quarter,\n        SUM(oi.quantity * oi.unit_price) AS merchandise_subtotal\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n      AND EXTRACT(YEAR FROM o.order_ts + INTERVAL 7 HOUR) = 2025\n    GROUP BY 1\n)\nSELECT\n    quarter,\n    merchandise_subtotal,\n    ROUND(\n        (merchandise_subtotal - LAG(merchandise_subtotal) OVER (ORDER BY quarter)) * 100.0\n        / LAG(merchandise_subtotal) OVER (ORDER BY quarter),\n        2\n    ) AS growth_percentage\nFROM quarterly_revenue\nORDER BY quarter;",
+      "gold_sql": "WITH q AS (SELECT DATE_TRUNC('quarter', (o.order_ts + INTERVAL 7 HOUR)) AS quy, SUM(oi.quantity*oi.unit_price) AS dt FROM orders o JOIN order_items oi ON oi.order_id=o.order_id WHERE o.status='completed' GROUP BY 1) SELECT EXTRACT(QUARTER FROM quy) AS quy_so, dt, ROUND(100.0*(dt-LAG(dt) OVER (ORDER BY quy))/LAG(dt) OVER (ORDER BY quy),2) AS tang_truong_pct FROM q WHERE YEAR(quy)=2025 ORDER BY quy",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1045,
+      "out_tokens": 949,
+      "latency_s": 7.98
+    },
+    {
+      "id": "h06",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "province_variants",
+        "status_filter"
+      ],
+      "question": "5 tỉnh/thành của khách hàng (theo tỉnh ghi trong hồ sơ khách hàng) có tiền hàng cao nhất từ các đơn hoàn thành, gộp các cách ghi tên khác nhau của cùng một tỉnh.",
+      "correct": false,
+      "reason": "từ chối nhầm (cannot_answer): Cơ sở dữ liệu không có bảng danh mục hoặc quy tắc ánh xạ/chuẩn hóa các cách ghi tên tỉnh/thành phố khác nhau.",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": "WITH n AS (SELECT customer_id, CASE WHEN province IN ('TP. Hồ Chí Minh','HCM','TP.HCM','Sài Gòn','Ho Chi Minh') THEN 'TP. Hồ Chí Minh' WHEN province IN ('Hà Nội','HN','Ha Noi','Hanoi') THEN 'Hà Nội' ELSE province END AS prov FROM customers) SELECT n.prov, SUM(oi.quantity*oi.unit_price) AS dt FROM orders o JOIN n ON n.customer_id=o.customer_id JOIN order_items oi ON oi.order_id=o.order_id WHERE o.status='completed' GROUP BY n.prov ORDER BY dt DESC, n.prov LIMIT 5",
+      "message": "Cơ sở dữ liệu không có bảng danh mục hoặc quy tắc ánh xạ/chuẩn hóa các cách ghi tên tỉnh/thành phố khác nhau.",
+      "attempts": 1,
+      "in_tokens": 1019,
+      "out_tokens": 1119,
+      "latency_s": 10.56
+    },
+    {
+      "id": "h08",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Theo từng tháng của năm 2025 (giờ Việt Nam), tỉ lệ phần trăm đơn có dùng voucher trên các đơn không bị hủy, làm tròn 2 chữ số. Cột tháng trả về dạng YYYY-MM.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT\n    STRFTIME(order_ts + INTERVAL 7 HOUR, '%Y-%m') AS month,\n    ROUND(COUNT(voucher_id) * 100.0 / COUNT(*), 2) AS voucher_order_percentage\nFROM orders\nWHERE status != 'cancelled'\n  AND order_ts + INTERVAL 7 HOUR >= TIMESTAMP '2025-01-01 00:00:00'\n  AND order_ts + INTERVAL 7 HOUR < TIMESTAMP '2026-01-01 00:00:00'\nGROUP BY month\nORDER BY month;",
+      "gold_sql": "SELECT DATE_TRUNC('month', (o.order_ts + INTERVAL 7 HOUR)) AS thang, ROUND(100.0*SUM(CASE WHEN o.voucher_id IS NOT NULL THEN 1 ELSE 0 END)/COUNT(*),2) AS ty_le FROM orders o WHERE o.status<>'cancelled' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 GROUP BY 1 ORDER BY 1",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1026,
+      "out_tokens": 954,
+      "latency_s": 8.09
+    },
+    {
+      "id": "h09",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "cohort"
+      ],
+      "question": "Nhóm khách có đơn hoàn thành ĐẦU TIÊN vào tháng 3/2025 (giờ Việt Nam): bao nhiêu phần trăm trong số họ có ít nhất 1 đơn hoàn thành trong tháng 4/2025? Làm tròn 2 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH first_completed_orders AS (\n    SELECT \n        customer_id,\n        MIN(order_ts + INTERVAL 7 HOUR) AS first_order_vn\n    FROM orders\n    WHERE status = 'completed'\n    GROUP BY customer_id\n),\ncohort_march AS (\n    SELECT customer_id\n    FROM first_completed_orders\n    WHERE first_order_vn >= TIMESTAMP '2025-03-01 00:00:00'\n      AND first_order_vn < TIMESTAMP '2025-04-01 00:00:00'\n),\nrepeat_april AS (\n    SELECT DISTINCT customer_id\n    FROM orders\n    WHERE status = 'completed'\n      AND order_ts + INTERVAL 7 HOUR >= TIMESTAMP '2025-04-01 00:00:00'\n      AND order_ts + INTERVAL 7 HOUR < TIMESTAMP '2025-05-01 00:00:00'\n)\nSELECT \n    ROUND(COUNT(r.customer_id) * 100.0 / NULLIF(COUNT(c.customer_id), 0), 2) AS retention_rate_percentage\nFROM cohort_march c\nLEFT JOIN repeat_april r ON c.customer_id = r.customer_id;",
+      "gold_sql": "WITH f AS (SELECT customer_id, CAST(DATE_TRUNC('month', MIN(order_ts + INTERVAL 7 HOUR)) AS DATE) AS m0 FROM orders WHERE status='completed' GROUP BY customer_id), coh AS (SELECT customer_id FROM f WHERE m0=DATE '2025-03-01'), ret AS (SELECT DISTINCT customer_id FROM orders WHERE status='completed' AND CAST(DATE_TRUNC('month', order_ts + INTERVAL 7 HOUR) AS DATE)=DATE '2025-04-01') SELECT ROUND(100.0*COUNT(ret.customer_id)/COUNT(*),2) FROM coh LEFT JOIN ret ON ret.customer_id=coh.customer_id",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1035,
+      "out_tokens": 1327,
+      "latency_s": 8.22
+    },
+    {
+      "id": "h11",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "join_fanout",
+        "status_filter"
+      ],
+      "question": "Giá trị tiền hàng trung bình của một đơn hoàn thành theo từng phương thức thanh toán (đơn chia nhiều phương thức thì tính vào từng phương thức), làm tròn 0 chữ số, xếp giảm dần.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH order_goods_value AS (\n    SELECT \n        o.order_id,\n        SUM(oi.quantity * oi.unit_price) AS goods_value\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n    GROUP BY o.order_id\n),\norder_payment_methods AS (\n    SELECT DISTINCT \n        order_id, \n        method\n    FROM payments\n)\nSELECT \n    opm.method,\n    ROUND(AVG(ogv.goods_value), 0) AS avg_goods_value\nFROM order_payment_methods opm\nJOIN order_goods_value ogv ON opm.order_id = ogv.order_id\nGROUP BY opm.method\nORDER BY avg_goods_value DESC;",
+      "gold_sql": "WITH g AS (SELECT order_id, SUM(quantity*unit_price) AS goods FROM order_items GROUP BY order_id), m AS (SELECT DISTINCT order_id, method FROM payments) SELECT m.method, ROUND(AVG(g.goods),0) AS tb FROM orders o JOIN g ON g.order_id=o.order_id JOIN m ON m.order_id=o.order_id WHERE o.status='completed' GROUP BY m.method ORDER BY tb DESC, m.method",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1019,
+      "out_tokens": 1807,
+      "latency_s": 14.55
+    },
+    {
+      "id": "h12",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "price_at_purchase"
+      ],
+      "question": "Bao nhiêu phần trăm dòng sản phẩm trong order_items có giá lúc mua thấp hơn giá niêm yết hiện tại (products.price) từ 10% trở lên (unit_price < 0.9 * price)? Làm tròn 2 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    ROUND(100.0 * COUNT(CASE WHEN oi.unit_price < 0.9 * p.price THEN 1 END) / COUNT(*), 2) AS percentage\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id;",
+      "gold_sql": "SELECT ROUND(100.0*SUM(CASE WHEN oi.unit_price<0.9*p.price THEN 1 ELSE 0 END)/COUNT(*),2) FROM order_items oi JOIN products p ON p.product_id=oi.product_id",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1033,
+      "out_tokens": 691,
+      "latency_s": 6.51
+    },
+    {
+      "id": "h14",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Tổng tiền hàng của các đơn hoàn thành đặt từ ngày 24/09/2026 đến hết ngày 30/09/2026 theo giờ Việt Nam.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_merchandise_amount\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nWHERE o.status = 'completed'\n  AND (o.order_ts + INTERVAL 7 HOUR)::DATE BETWEEN DATE '2026-09-24' AND DATE '2026-09-30';",
+      "gold_sql": "SELECT SUM(oi.quantity*oi.unit_price) FROM orders o JOIN order_items oi ON oi.order_id=o.order_id WHERE o.status='completed' AND CAST((o.order_ts + INTERVAL 7 HOUR) AS DATE) BETWEEN DATE '2026-09-24' AND DATE '2026-09-30'",
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 1018,
+      "out_tokens": 1101,
+      "latency_s": 9.04
+    },
+    {
+      "id": "a02",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Doanh thu quý này là bao nhiêu?",
+      "correct": false,
+      "reason": "không hỏi làm rõ (behavior=answer)",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_revenue\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nWHERE o.status = 'completed'\n  AND o.order_ts + INTERVAL 7 HOUR >= TIMESTAMP '2026-10-01 00:00:00'\n  AND o.order_ts + INTERVAL 7 HOUR <= TIMESTAMP '2026-10-14 23:59:59';",
+      "gold_sql": null,
+      "message": "",
+      "attempts": 1,
+      "in_tokens": 986,
+      "out_tokens": 2759,
+      "latency_s": 22.48
+    },
+    {
+      "id": "a04",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Sản phẩm nào bán chạy nhất gần đây?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bạn muốn xác định \"gần đây\" trong khoảng thời gian nào (ví dụ: 7 ngày hay 30 ngày qua tính đến 14/10/2026) và \"bán chạy nhất\" theo số lượng bán ra hay doanh thu?",
+      "attempts": 1,
+      "in_tokens": 987,
+      "out_tokens": 370,
+      "latency_s": 4.42
+    },
+    {
+      "id": "a05",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Cho tôi biết tình hình kinh doanh tháng này.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bạn muốn xem các chỉ số cụ thể nào về tình hình kinh doanh tháng này (ví dụ: tổng doanh thu, số lượng đơn hàng hoàn thành/hủy, số lượng khách mua hàng, hay thống kê theo ngành hàng/sản phẩm)?",
+      "attempts": 1,
+      "in_tokens": 987,
+      "out_tokens": 801,
+      "latency_s": 8.71
+    },
+    {
+      "id": "o02",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Mỗi ngày website có bao nhiêu lượt truy cập?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Schema không có bảng hoặc thông tin ghi nhận lượt truy cập (traffic/pageviews) của website.",
+      "attempts": 1,
+      "in_tokens": 988,
+      "out_tokens": 161,
+      "latency_s": 3.01
+    },
+    {
+      "id": "o03",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Chi phí quảng cáo và ROAS của từng chiến dịch là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Cơ sở dữ liệu không có bảng hoặc thông tin về chiến dịch quảng cáo và chi phí tiếp thị để tính ROAS.",
+      "attempts": 1,
+      "in_tokens": 992,
+      "out_tokens": 173,
+      "latency_s": 4.16
+    },
+    {
+      "id": "o05",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Lợi nhuận gộp của từng sản phẩm là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Cơ sở dữ liệu không có thông tin về giá vốn hoặc chi phí nhập hàng (COGS) của sản phẩm để tính lợi nhuận gộp.",
+      "attempts": 1,
+      "in_tokens": 991,
+      "out_tokens": 313,
+      "latency_s": 4.03
+    },
+    {
+      "id": "o06",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Số điện thoại của 10 khách mua nhiều nhất?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bảng customers và cơ sở dữ liệu không lưu thông tin số điện thoại của khách hàng.",
+      "attempts": 1,
+      "in_tokens": 989,
+      "out_tokens": 223,
+      "latency_s": 3.29
+    }
+  ]
+}

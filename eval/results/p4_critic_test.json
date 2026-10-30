@@ -1,0 +1,695 @@
+{
+  "summary": {
+    "name": "p4_critic_test",
+    "model": "gemini-3.8-flash",
+    "preset": "p4_critic",
+    "n": 33,
+    "execution_accuracy": 0.92,
+    "exec_error_rate": 0.0,
+    "wrong_result_rate": 0.08,
+    "ambiguous_accuracy": 1.0,
+    "out_of_scope_accuracy": 1.0,
+    "avg_attempts": 2.515151515151515,
+    "avg_latency_s": 16.931818181818183,
+    "avg_in_tokens": 5424.212121212121,
+    "avg_out_tokens": 1477.969696969697,
+    "llm_stats": {
+      "calls": 83,
+      "cache_hits": 58,
+      "retries": 0,
+      "in_tokens": 60299,
+      "out_tokens": 11629,
+      "latency_s": 140.99747014045715
+    },
+    "by_difficulty": {
+      "medium": {
+        "acc": 0.8888888888888888,
+        "n": 9
+      },
+      "hard": {
+        "acc": 0.9230769230769231,
+        "n": 13
+      },
+      "easy": {
+        "acc": 1.0,
+        "n": 3
+      }
+    },
+    "by_trap": {
+      "timezone": {
+        "acc": 1.0,
+        "n": 9
+      },
+      "status_filter": {
+        "acc": 1.0,
+        "n": 15
+      },
+      "window_function": {
+        "acc": 1.0,
+        "n": 3
+      },
+      "province_variants": {
+        "acc": 1.0,
+        "n": 2
+      },
+      "denominator_definition": {
+        "acc": 0.0,
+        "n": 1
+      },
+      "join_fanout": {
+        "acc": 0.6666666666666666,
+        "n": 3
+      },
+      "cohort": {
+        "acc": 1.0,
+        "n": 1
+      },
+      "multi_step": {
+        "acc": 1.0,
+        "n": 2
+      },
+      "price_at_purchase": {
+        "acc": 1.0,
+        "n": 1
+      }
+    }
+  },
+  "records": [
+    {
+      "id": "m01",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Tổng giá trị hàng hóa (chưa tính phí ship, chưa trừ voucher) của các đơn hoàn thành trong năm 2025 theo giờ Việt Nam là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    SUM(oi.quantity * oi.unit_price) AS total_merchandise_value\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nWHERE o.status = 'completed'\n  AND EXTRACT(YEAR FROM (o.order_ts + INTERVAL 7 HOUR)) = 2025;",
+      "gold_sql": "SELECT SUM(oi.quantity*oi.unit_price) FROM orders o JOIN order_items oi USING(order_id) WHERE o.status='completed' AND YEAR(o.order_ts + INTERVAL 7 HOUR)=2025",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6376,
+      "out_tokens": 1442,
+      "latency_s": 16.82
+    },
+    {
+      "id": "h01",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "window_function",
+        "status_filter"
+      ],
+      "question": "Doanh thu hàng hóa của đơn hoàn thành theo từng tháng trong năm 2025 (giờ Việt Nam) và phần trăm tăng trưởng so với tháng liền trước, làm tròn 2 chữ số. Chỉ xét các tháng trong năm 2025 nên tháng 1 có tăng trưởng NULL. Cột tháng trả về dạng YYYY-MM.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH monthly_revenue AS (\n    SELECT \n        strftime(o.order_ts + INTERVAL 7 HOUR, '%Y-%m') AS month,\n        SUM(oi.quantity * oi.unit_price) AS revenue\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n      AND EXTRACT(YEAR FROM o.order_ts + INTERVAL 7 HOUR) = 2025\n    GROUP BY 1\n)\nSELECT \n    month,\n    revenue,\n    ROUND((revenue - LAG(revenue) OVER (ORDER BY month)) * 100.0 / LAG(revenue) OVER (ORDER BY month), 2) AS growth_pct\nFROM monthly_revenue\nORDER BY month;",
+      "gold_sql": "WITH m AS (SELECT DATE_TRUNC('month', o.order_ts + INTERVAL 7 HOUR) AS thang, SUM(oi.quantity*oi.unit_price) AS dt FROM orders o JOIN order_items oi USING(order_id) WHERE o.status='completed' GROUP BY 1) SELECT thang, dt, ROUND(100.0*(dt - LAG(dt) OVER (ORDER BY thang))/LAG(dt) OVER (ORDER BY thang),2) AS tang_truong_pct FROM m WHERE YEAR(thang)=2025 ORDER BY thang",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6799,
+      "out_tokens": 2051,
+      "latency_s": 22.57
+    },
+    {
+      "id": "o01",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Tỉ lệ khách hàng nữ trên tổng số khách là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Cơ sở dữ liệu không lưu trữ thông tin về giới tính của khách hàng trong bảng customers.",
+      "attempts": 1,
+      "in_tokens": 2079,
+      "out_tokens": 122,
+      "latency_s": 4.48
+    },
+    {
+      "id": "e05",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Giá niêm yết cao nhất của một sản phẩm là bao nhiêu đồng?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT MAX(price) AS max_price\nFROM products;",
+      "gold_sql": "SELECT MAX(price) FROM products",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6242,
+      "out_tokens": 586,
+      "latency_s": 10.38
+    },
+    {
+      "id": "e08",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Hiện có bao nhiêu đơn hàng đang trong trạng thái đang giao?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) \nFROM orders \nWHERE status = 'delivering';",
+      "gold_sql": "SELECT COUNT(*) FROM orders WHERE status='delivering'",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6232,
+      "out_tokens": 732,
+      "latency_s": 13.28
+    },
+    {
+      "id": "m05",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "status_filter"
+      ],
+      "question": "5 danh mục con (trả về category_id và tên danh mục) có tiền hàng cao nhất trong các đơn hoàn thành.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    c.category_id,\n    c.name_vi,\n    SUM(oi.quantity * oi.unit_price) AS total_sales\nFROM categories c\nJOIN products p ON c.category_id = p.category_id\nJOIN order_items oi ON p.product_id = oi.product_id\nJOIN orders o ON oi.order_id = o.order_id\nWHERE c.parent_id IS NOT NULL\n  AND o.status = 'completed'\nGROUP BY c.category_id, c.name_vi\nORDER BY total_sales DESC\nLIMIT 5;",
+      "gold_sql": "SELECT c.category_id, c.name_vi, SUM(oi.quantity*oi.unit_price) AS rev FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id WHERE o.status='completed' GROUP BY c.category_id, c.name_vi ORDER BY rev DESC, c.category_id LIMIT 5",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6517,
+      "out_tokens": 1783,
+      "latency_s": 21.6
+    },
+    {
+      "id": "m08",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "province_variants"
+      ],
+      "question": "Có bao nhiêu khách hàng ở TP. Hồ Chí Minh (tính cả các cách ghi tên khác của thành phố này)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS num_customers\nFROM customers\nWHERE province IN ('TP. Hồ Chí Minh', 'TP.HCM', 'Sài Gòn', 'HCM', 'Ho Chi Minh');",
+      "gold_sql": "SELECT COUNT(*) FROM customers WHERE province IN ('TP. Hồ Chí Minh','HCM','TP.HCM','Sài Gòn','Ho Chi Minh')",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6292,
+      "out_tokens": 1005,
+      "latency_s": 13.25
+    },
+    {
+      "id": "m11",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Điểm đánh giá trung bình theo từng danh mục gốc (tên danh mục gốc), làm tròn 2 chữ số, xếp giảm dần.",
+      "correct": false,
+      "reason": "wrong_result",
+      "behavior": "answer",
+      "pred_sql": "WITH RECURSIVE cat_tree AS (\n    SELECT \n        category_id, \n        category_id AS root_id, \n        name_vi AS root_name\n    FROM categories\n    WHERE parent_id IS NULL\n\n    UNION ALL\n\n    SELECT \n        c.category_id, \n        ct.root_id, \n        ct.root_name\n    FROM categories c\n    JOIN cat_tree ct ON c.parent_id = ct.category_id\n)\nSELECT \n    ct.root_name AS root_category_name,\n    ROUND(AVG(r.rating), 2) AS avg_rating\nFROM reviews r\nJOIN order_items oi ON r.order_item_id = oi.order_item_id\nJOIN products p ON oi.product_id = p.product_id\nJOIN cat_tree ct ON p.category_id = ct.category_id\nGROUP BY ct.root_id, ct.root_name\nORDER BY avg_rating DESC;",
+      "gold_sql": "SELECT r.name_vi, ROUND(AVG(rv.rating),2) AS avg_rating FROM reviews rv JOIN order_items oi ON oi.order_item_id=rv.order_item_id JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id JOIN categories r ON r.category_id=c.parent_id GROUP BY r.name_vi ORDER BY avg_rating DESC, r.name_vi",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6604,
+      "out_tokens": 1905,
+      "latency_s": 19.28
+    },
+    {
+      "id": "m14",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Thời gian giao trung bình của từng hãng vận chuyển cho các đơn đã giao thành công, tính bằng số ngày thập phân (= số giờ từ shipped_ts đến delivered_ts chia 24), làm tròn 2 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    carrier,\n    ROUND(AVG(DATE_DIFF('hour', shipped_ts, delivered_ts) / 24.0), 2) AS avg_delivery_days\nFROM shipments\nWHERE status = 'delivered'\n  AND shipped_ts IS NOT NULL\n  AND delivered_ts IS NOT NULL\nGROUP BY carrier\nORDER BY avg_delivery_days;",
+      "gold_sql": "SELECT carrier, ROUND(AVG(DATE_DIFF('hour', shipped_ts, delivered_ts))/24.0,2) AS avg_days FROM shipments WHERE status='delivered' GROUP BY carrier ORDER BY carrier",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6443,
+      "out_tokens": 4394,
+      "latency_s": 41.28
+    },
+    {
+      "id": "m17",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Có bao nhiêu sản phẩm chưa từng được bán (không xuất hiện trong order_items)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*)\nFROM products p\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM order_items oi\n    WHERE oi.product_id = p.product_id\n);",
+      "gold_sql": "SELECT COUNT(*) FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id=p.product_id)",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6269,
+      "out_tokens": 903,
+      "latency_s": 13.72
+    },
+    {
+      "id": "h04",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "status_filter"
+      ],
+      "question": "Trong số khách có ít nhất 1 đơn hoàn thành, bao nhiêu phần trăm có từ 2 đơn hoàn thành trở lên? Làm tròn 2 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH customer_completed AS (\n    SELECT customer_id, COUNT(*) AS completed_orders\n    FROM orders\n    WHERE status = 'completed'\n    GROUP BY customer_id\n)\nSELECT \n    ROUND(100.0 * COUNT(CASE WHEN completed_orders >= 2 THEN 1 END) / COUNT(*), 2) AS percentage\nFROM customer_completed;",
+      "gold_sql": "WITH c AS (SELECT customer_id, COUNT(*) AS n FROM orders WHERE status='completed' GROUP BY customer_id) SELECT ROUND(100.0*SUM(CASE WHEN n>=2 THEN 1 ELSE 0 END)/COUNT(*),2) FROM c",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6358,
+      "out_tokens": 1269,
+      "latency_s": 17.23
+    },
+    {
+      "id": "h07",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "window_function",
+        "status_filter"
+      ],
+      "question": "Với mỗi danh mục gốc, 3 sản phẩm (product_id) bán nhiều nhất theo tổng quantity trong đơn hoàn thành. Nếu bằng nhau lấy product_id nhỏ hơn. Trả về tên danh mục gốc, product_id, tổng quantity.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH RECURSIVE cat_tree AS (\n    SELECT \n        category_id, \n        category_id AS root_id, \n        name_vi AS root_name\n    FROM categories\n    WHERE parent_id IS NULL\n\n    UNION ALL\n\n    SELECT \n        c.category_id, \n        ct.root_id, \n        ct.root_name\n    FROM categories c\n    JOIN cat_tree ct ON c.parent_id = ct.category_id\n),\nproduct_sales AS (\n    SELECT\n        ct.root_name,\n        p.product_id,\n        SUM(oi.quantity) AS total_quantity,\n        ROW_NUMBER() OVER (\n            PARTITION BY ct.root_id \n            ORDER BY SUM(oi.quantity) DESC, p.product_id ASC\n        ) AS rn\n    FROM order_items oi\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    JOIN cat_tree ct ON p.category_id = ct.category_id\n    WHERE o.status = 'completed'\n    GROUP BY ct.root_id, ct.root_name, p.product_id\n)\nSELECT\n    root_name AS category_name,\n    product_id,\n    total_quantity\nFROM product_sales\nWHERE rn <= 3\nORDER BY category_name, total_quantity DESC, product_id ASC;",
+      "gold_sql": "WITH s AS (SELECT r.name_vi AS root, p.product_id, SUM(oi.quantity) AS qty FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id JOIN categories r ON r.category_id=c.parent_id WHERE o.status='completed' GROUP BY r.name_vi, p.product_id), k AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY root ORDER BY qty DESC, product_id) AS rn FROM s) SELECT root, product_id, qty FROM k WHERE rn<=3 ORDER BY root, qty DESC, product_id",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6818,
+      "out_tokens": 2739,
+      "latency_s": 29.65
+    },
+    {
+      "id": "h10",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "denominator_definition",
+        "join_fanout"
+      ],
+      "question": "Tỉ lệ phần trăm đơn bị hoàn trả (returned) trên các đơn đã giao xong (completed + returned) theo từng danh mục gốc; đếm theo đơn (một đơn có nhiều danh mục thì tính cho từng danh mục), làm tròn 2 chữ số.",
+      "correct": false,
+      "reason": "wrong_result",
+      "behavior": "answer",
+      "pred_sql": "WITH RECURSIVE cat_tree AS (\n    SELECT category_id AS root_id, name_vi AS root_name, category_id\n    FROM categories\n    WHERE parent_id IS NULL\n    UNION ALL\n    SELECT ct.root_id, ct.root_name, c.category_id\n    FROM categories c\n    JOIN cat_tree ct ON c.parent_id = ct.category_id\n)\nSELECT\n    ct.root_id AS category_id,\n    ct.root_name AS category_name,\n    ROUND(\n        COUNT(DISTINCT CASE WHEN o.status = 'returned' THEN o.order_id END) * 100.0 / \n        COUNT(DISTINCT o.order_id), \n        2\n    ) AS return_rate_percent\nFROM cat_tree ct\nJOIN products p ON ct.category_id = p.category_id\nJOIN order_items oi ON p.product_id = oi.product_id\nJOIN orders o ON oi.order_id = o.order_id\nWHERE o.status IN ('completed', 'returned')\nGROUP BY ct.root_id, ct.root_name\nORDER BY ct.root_id;",
+      "gold_sql": "SELECT r.name_vi, ROUND(100.0*COUNT(DISTINCT CASE WHEN o.status='returned' THEN o.order_id END)/COUNT(DISTINCT o.order_id),2) AS ty_le FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id JOIN categories r ON r.category_id=c.parent_id WHERE o.status IN ('completed','returned') GROUP BY r.name_vi ORDER BY ty_le DESC, r.name_vi",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6759,
+      "out_tokens": 3150,
+      "latency_s": 33.14
+    },
+    {
+      "id": "h13",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Trong năm 2025 (giờ Việt Nam), có bao nhiêu ngày có trên 80 đơn hoàn thành?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(*) AS num_days\nFROM (\n    SELECT CAST(order_ts + INTERVAL 7 HOUR AS DATE) AS order_date\n    FROM orders\n    WHERE status = 'completed'\n      AND EXTRACT(YEAR FROM order_ts + INTERVAL 7 HOUR) = 2025\n    GROUP BY CAST(order_ts + INTERVAL 7 HOUR AS DATE)\n    HAVING COUNT(*) > 80\n);",
+      "gold_sql": "SELECT COUNT(*) FROM (SELECT CAST((o.order_ts + INTERVAL 7 HOUR) AS DATE) AS d FROM orders o WHERE o.status='completed' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 GROUP BY 1 HAVING COUNT(*)>80)",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6343,
+      "out_tokens": 1341,
+      "latency_s": 18.27
+    },
+    {
+      "id": "a03",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Cho tôi danh sách khách hàng VIP.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Hệ thống chưa có định nghĩa sẵn về khách hàng VIP. Bạn có thể làm rõ tiêu chí xác định không (ví dụ: dựa trên tổng chi tiêu đạt ngưỡng bao nhiêu, số lượng đơn hàng hoàn thành, hay lấy top N khách hàng chi tiêu nhiều nhất)?",
+      "attempts": 1,
+      "in_tokens": 2073,
+      "out_tokens": 574,
+      "latency_s": 6.6
+    },
+    {
+      "id": "a06",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Shop nào tốt nhất?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bạn muốn đánh giá 'tốt nhất' theo tiêu chí nào (doanh thu cao nhất, số lượng đơn hoàn thành nhiều nhất, hay điểm đánh giá đánh giá trung bình/rating cao nhất) và trong khoảng thời gian nào?",
+      "attempts": 1,
+      "in_tokens": 2070,
+      "out_tokens": 185,
+      "latency_s": 4.92
+    },
+    {
+      "id": "o04",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Quận/huyện nào có nhiều đơn giao nhất?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Cơ sở dữ liệu chỉ lưu trữ thông tin cấp tỉnh/thành phố (province) của khách hàng và người bán, không có dữ liệu về quận/huyện.",
+      "attempts": 1,
+      "in_tokens": 2076,
+      "out_tokens": 188,
+      "latency_s": 2.68
+    },
+    {
+      "id": "n01",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "join_fanout",
+        "status_filter"
+      ],
+      "question": "Với các đơn hoàn thành, tổng tiền hàng và tổng phí ship theo từng hãng vận chuyển (bảng shipments). Trả về carrier, tổng tiền hàng, tổng phí ship.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH order_subtotals AS (\n    SELECT \n        order_id,\n        SUM(quantity * unit_price) AS subtotal\n    FROM order_items\n    GROUP BY order_id\n)\nSELECT \n    s.carrier,\n    SUM(os.subtotal) AS tong_tien_hang,\n    SUM(o.shipping_fee) AS tong_phi_ship\nFROM orders o\nJOIN shipments s ON o.order_id = s.order_id\nJOIN order_subtotals os ON o.order_id = os.order_id\nWHERE o.status = 'completed'\nGROUP BY s.carrier;",
+      "gold_sql": "WITH g AS (SELECT order_id, SUM(quantity*unit_price) AS goods FROM order_items GROUP BY order_id) SELECT s.carrier, SUM(g.goods) AS tien_hang, SUM(o.shipping_fee) AS phi_ship FROM orders o JOIN shipments s ON s.order_id=o.order_id JOIN g ON g.order_id=o.order_id WHERE o.status='completed' GROUP BY s.carrier",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6548,
+      "out_tokens": 2281,
+      "latency_s": 24.48
+    },
+    {
+      "id": "n04",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Số đơn hoàn thành theo từng thứ trong tuần (giờ Việt Nam), dùng thứ ISO: 1 = Thứ Hai, ..., 7 = Chủ Nhật. Trả về thứ và số đơn.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    EXTRACT(ISODOW FROM order_ts + INTERVAL 7 HOUR) AS day_of_week,\n    COUNT(*) AS total_orders\nFROM orders\nWHERE status = 'completed'\nGROUP BY 1\nORDER BY 1;",
+      "gold_sql": "SELECT ISODOW((o.order_ts + INTERVAL 7 HOUR)) AS thu, COUNT(*) AS so_don FROM orders o WHERE o.status='completed' GROUP BY 1",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6420,
+      "out_tokens": 1221,
+      "latency_s": 16.07
+    },
+    {
+      "id": "n07",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "cohort",
+        "status_filter"
+      ],
+      "question": "Số khách hàng mới theo từng tháng của năm 2025 (giờ Việt Nam). Khách mới của một tháng là khách có đơn hoàn thành đầu tiên rơi vào tháng đó. Trả về tháng dạng YYYY-MM và số khách mới.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH first_completed AS (\n    SELECT \n        customer_id,\n        MIN(order_ts + INTERVAL 7 HOUR) AS first_order_ts_vn\n    FROM orders\n    WHERE status = 'completed'\n    GROUP BY customer_id\n)\nSELECT \n    strftime(first_order_ts_vn, '%Y-%m') AS month,\n    COUNT(customer_id) AS new_customers\nFROM first_completed\nWHERE first_order_ts_vn >= TIMESTAMP '2025-01-01 00:00:00' \n  AND first_order_ts_vn < TIMESTAMP '2026-01-01 00:00:00'\nGROUP BY 1\nORDER BY 1;",
+      "gold_sql": "WITH f AS (SELECT customer_id, MIN(order_ts + INTERVAL 7 HOUR) AS first_ts FROM orders WHERE status='completed' GROUP BY customer_id) SELECT STRFTIME(first_ts, '%Y-%m') AS thang, COUNT(*) AS so_khach FROM f WHERE YEAR(first_ts)=2025 GROUP BY 1",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6628,
+      "out_tokens": 2105,
+      "latency_s": 21.62
+    },
+    {
+      "id": "n10",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "window_function",
+        "status_filter"
+      ],
+      "question": "Trong từng tháng của quý 4/2025 (giờ Việt Nam), 3 sản phẩm (product_id) có tiền hàng cao nhất từ các đơn hoàn thành; nếu bằng nhau lấy product_id nhỏ hơn. Trả về tháng dạng YYYY-MM, product_id, tiền hàng.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH monthly_product_sales AS (\n    SELECT\n        strftime(o.order_ts + INTERVAL 7 HOUR, '%Y-%m') AS month,\n        oi.product_id,\n        SUM(oi.quantity * oi.unit_price) AS total_revenue\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n      AND o.order_ts + INTERVAL 7 HOUR >= TIMESTAMP '2025-10-01 00:00:00'\n      AND o.order_ts + INTERVAL 7 HOUR < TIMESTAMP '2026-01-01 00:00:00'\n    GROUP BY 1, 2\n),\nranked_products AS (\n    SELECT\n        month,\n        product_id,\n        total_revenue,\n        ROW_NUMBER() OVER (\n            PARTITION BY month \n            ORDER BY total_revenue DESC, product_id ASC\n        ) AS rnk\n    FROM monthly_product_sales\n)\nSELECT\n    month,\n    product_id,\n    total_revenue AS tien_hang\nFROM ranked_products\nWHERE rnk <= 3\nORDER BY month, rnk;",
+      "gold_sql": "WITH s AS (SELECT STRFTIME((o.order_ts + INTERVAL 7 HOUR), '%Y-%m') AS thang, oi.product_id, SUM(oi.quantity*oi.unit_price) AS dt FROM orders o JOIN order_items oi ON oi.order_id=o.order_id WHERE o.status='completed' AND CAST((o.order_ts + INTERVAL 7 HOUR) AS DATE) BETWEEN DATE '2025-10-01' AND DATE '2025-12-31' GROUP BY 1, 2), k AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY thang ORDER BY dt DESC, product_id) AS rn FROM s) SELECT thang, product_id, dt FROM k WHERE rn<=3",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6873,
+      "out_tokens": 2010,
+      "latency_s": 21.8
+    },
+    {
+      "id": "n13",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "multi_step",
+        "status_filter"
+      ],
+      "question": "Có bao nhiêu khách hàng đã có đơn hoàn thành chứa sản phẩm thuộc cả hai danh mục gốc 'Thời trang nữ' và 'Mẹ & Bé' (không nhất thiết trong cùng một đơn)?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH RECURSIVE cat_tree AS (\n    SELECT category_id, name_vi AS root_name\n    FROM categories\n    WHERE parent_id IS NULL\n    UNION ALL\n    SELECT c.category_id, ct.root_name\n    FROM categories c\n    JOIN cat_tree ct ON c.parent_id = ct.category_id\n),\neligible_customers AS (\n    SELECT o.customer_id\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    JOIN cat_tree ct ON p.category_id = ct.category_id\n    WHERE o.status = 'completed'\n      AND ct.root_name IN ('Thời trang nữ', 'Mẹ & Bé')\n    GROUP BY o.customer_id\n    HAVING COUNT(DISTINCT ct.root_name) = 2\n)\nSELECT COUNT(*) AS total_customers\nFROM eligible_customers;",
+      "gold_sql": "WITH cc AS (SELECT DISTINCT o.customer_id, rc.name_vi AS root FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id JOIN categories rc ON rc.category_id=c.parent_id WHERE o.status='completed') SELECT COUNT(*) FROM (SELECT customer_id FROM cc WHERE root IN ('Thời trang nữ','Mẹ & Bé') GROUP BY customer_id HAVING COUNT(DISTINCT root)=2)",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6523,
+      "out_tokens": 2020,
+      "latency_s": 20.78
+    },
+    {
+      "id": "n16",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "timezone",
+        "multi_step",
+        "status_filter"
+      ],
+      "question": "Tổng số tiền giảm giá từ voucher của các đơn hoàn thành trong năm 2025 (giờ Việt Nam). Voucher percent giảm tiền hàng * value / 100 (làm tròn xuống đồng), voucher fixed giảm đúng value đồng, và mức giảm không vượt quá tiền hàng của đơn.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH order_totals AS (\n    SELECT \n        o.order_id,\n        o.voucher_id,\n        SUM(oi.quantity * oi.unit_price) AS item_total\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n      AND EXTRACT(YEAR FROM o.order_ts + INTERVAL 7 HOUR) = 2025\n      AND o.voucher_id IS NOT NULL\n    GROUP BY o.order_id, o.voucher_id\n)\nSELECT \n    COALESCE(SUM(\n        LEAST(\n            ot.item_total,\n            CASE \n                WHEN v.discount_type = 'percent' THEN FLOOR(ot.item_total * v.value / 100.0)::BIGINT\n                WHEN v.discount_type = 'fixed' THEN v.value\n                ELSE 0\n            END\n        )\n    ), 0) AS total_discount\nFROM order_totals ot\nJOIN vouchers v ON ot.voucher_id = v.voucher_id;",
+      "gold_sql": "WITH g AS (SELECT order_id, SUM(quantity*unit_price) AS goods FROM order_items GROUP BY order_id) SELECT SUM(LEAST(CASE WHEN v.discount_type='percent' THEN CAST(FLOOR(g.goods*v.value/100.0) AS BIGINT) ELSE v.value END, g.goods)) FROM orders o JOIN g ON g.order_id=o.order_id JOIN vouchers v ON v.voucher_id=o.voucher_id WHERE o.status='completed' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6619,
+      "out_tokens": 2288,
+      "latency_s": 22.64
+    },
+    {
+      "id": "n19",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "price_at_purchase"
+      ],
+      "question": "Có bao nhiêu sản phẩm đã từng được bán mà giá lúc mua trung bình (trung bình unit_price trên các dòng order_items của sản phẩm) thấp hơn giá niêm yết hiện tại (products.price) hơn 10%?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH product_avg AS (\n    SELECT \n        product_id,\n        AVG(unit_price) AS avg_unit_price\n    FROM order_items\n    GROUP BY product_id\n)\nSELECT COUNT(*)\nFROM product_avg pa\nJOIN products p ON pa.product_id = p.product_id\nWHERE pa.avg_unit_price < p.price * 0.9;",
+      "gold_sql": "SELECT COUNT(*) FROM (SELECT p.product_id FROM products p JOIN order_items oi ON oi.product_id=p.product_id GROUP BY p.product_id, p.price HAVING AVG(oi.unit_price) < 0.9*p.price)",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6423,
+      "out_tokens": 3031,
+      "latency_s": 33.56
+    },
+    {
+      "id": "n22",
+      "type": "answerable",
+      "difficulty": "hard",
+      "traps": [
+        "province_variants",
+        "join_fanout",
+        "status_filter"
+      ],
+      "question": "Với khách ở Hà Nội và khách ở TP. Hồ Chí Minh (gộp mọi cách ghi tên của hai thành phố này): số khách có ít nhất 1 đơn hoàn thành và tổng tiền hàng của họ từ các đơn hoàn thành. Trả về tên chuẩn ('Hà Nội' hoặc 'TP. Hồ Chí Minh'), số khách, tổng tiền hàng.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT \n    CASE \n        WHEN c.province IN ('Hà Nội', 'HN', 'Ha Noi', 'Hanoi') THEN 'Hà Nội'\n        WHEN c.province IN ('TP. Hồ Chí Minh', 'TP.HCM', 'Sài Gòn', 'HCM', 'Ho Chi Minh') THEN 'TP. Hồ Chí Minh'\n    END AS province,\n    COUNT(DISTINCT c.customer_id) AS customer_count,\n    SUM(oi.quantity * oi.unit_price) AS total_item_value\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nWHERE o.status = 'completed'\n  AND c.province IN ('Hà Nội', 'HN', 'Ha Noi', 'Hanoi', 'TP. Hồ Chí Minh', 'TP.HCM', 'Sài Gòn', 'HCM', 'Ho Chi Minh')\nGROUP BY 1;",
+      "gold_sql": "WITH n AS (SELECT customer_id, CASE WHEN province IN ('TP. Hồ Chí Minh','HCM','TP.HCM','Sài Gòn','Ho Chi Minh') THEN 'TP. Hồ Chí Minh' WHEN province IN ('Hà Nội','HN','Ha Noi','Hanoi') THEN 'Hà Nội' ELSE province END AS prov FROM customers), g AS (SELECT order_id, SUM(quantity*unit_price) AS goods FROM order_items GROUP BY order_id) SELECT n.prov, COUNT(DISTINCT o.customer_id) AS so_khach, SUM(g.goods) AS tien_hang FROM orders o JOIN n ON n.customer_id=o.customer_id JOIN g ON g.order_id=o.order_id WHERE o.status='completed' AND n.prov IN ('Hà Nội','TP. Hồ Chí Minh') GROUP BY n.prov",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6672,
+      "out_tokens": 2598,
+      "latency_s": 24.96
+    },
+    {
+      "id": "n25",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Tổng phí ship của các đơn hoàn thành đặt trong tháng 11/2025 (giờ Việt Nam).",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT SUM(shipping_fee) AS total_shipping_fee\nFROM orders\nWHERE status = 'completed'\n  AND (order_ts + INTERVAL 7 HOUR) >= '2025-11-01 00:00:00'\n  AND (order_ts + INTERVAL 7 HOUR) < '2025-12-01 00:00:00';",
+      "gold_sql": "SELECT SUM(o.shipping_fee) FROM orders o WHERE o.status='completed' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 AND MONTH((o.order_ts + INTERVAL 7 HOUR))=11",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6348,
+      "out_tokens": 1356,
+      "latency_s": 15.15
+    },
+    {
+      "id": "n28",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [
+        "timezone",
+        "status_filter"
+      ],
+      "question": "Trung vị (median) tiền hàng của một đơn hoàn thành đặt trong năm 2025 (giờ Việt Nam), làm tròn 0 chữ số.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH order_subtotals AS (\n    SELECT \n        o.order_id,\n        SUM(oi.quantity * oi.unit_price) AS subtotal\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    WHERE o.status = 'completed'\n      AND EXTRACT(YEAR FROM (o.order_ts + INTERVAL 7 HOUR)) = 2025\n    GROUP BY o.order_id\n)\nSELECT ROUND(MEDIAN(subtotal), 0) AS median_merchandise_subtotal\nFROM order_subtotals;",
+      "gold_sql": "WITH g AS (SELECT o.order_id, SUM(oi.quantity*oi.unit_price) AS goods FROM orders o JOIN order_items oi ON oi.order_id=o.order_id WHERE o.status='completed' AND YEAR((o.order_ts + INTERVAL 7 HOUR))=2025 GROUP BY o.order_id) SELECT ROUND(MEDIAN(goods), 0) FROM g",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6416,
+      "out_tokens": 1788,
+      "latency_s": 19.65
+    },
+    {
+      "id": "n31",
+      "type": "answerable",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Có bao nhiêu shop đã đăng ít nhất một sản phẩm?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "SELECT COUNT(DISTINCT seller_id) AS total_sellers\nFROM products;",
+      "gold_sql": "SELECT COUNT(DISTINCT seller_id) FROM products",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6229,
+      "out_tokens": 776,
+      "latency_s": 12.4
+    },
+    {
+      "id": "n34",
+      "type": "answerable",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "Tiền hàng trung bình của một dòng sản phẩm (quantity * unit_price) trong order_items theo từng danh mục gốc (tên danh mục gốc), làm tròn 0 chữ số, tính trên tất cả các dòng.",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "answer",
+      "pred_sql": "WITH RECURSIVE category_tree AS (\n    SELECT category_id, name_vi AS root_name\n    FROM categories\n    WHERE parent_id IS NULL\n    UNION ALL\n    SELECT c.category_id, ct.root_name\n    FROM categories c\n    JOIN category_tree ct ON c.parent_id = ct.category_id\n)\nSELECT \n    ct.root_name AS root_category_name,\n    ROUND(AVG(oi.quantity * oi.unit_price), 0) AS avg_item_total\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id\nJOIN category_tree ct ON p.category_id = ct.category_id\nGROUP BY ct.root_name;",
+      "gold_sql": "SELECT rc.name_vi, ROUND(AVG(oi.quantity*oi.unit_price), 0) AS tb FROM order_items oi JOIN products p ON p.product_id=oi.product_id JOIN categories c ON c.category_id=p.category_id JOIN categories rc ON rc.category_id=c.parent_id GROUP BY rc.name_vi",
+      "message": "",
+      "attempts": 3,
+      "in_tokens": 6639,
+      "out_tokens": 1953,
+      "latency_s": 20.17
+    },
+    {
+      "id": "a07",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Tháng nào bán tốt nhất?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bạn muốn xác định tháng bán tốt nhất theo tiêu chí nào (tổng doanh thu, số lượng sản phẩm bán ra hay số đơn hàng thành công) và trong năm nào?",
+      "attempts": 1,
+      "in_tokens": 2071,
+      "out_tokens": 367,
+      "latency_s": 5.39
+    },
+    {
+      "id": "a10",
+      "type": "ambiguous",
+      "difficulty": "hard",
+      "traps": [],
+      "question": "Hãng vận chuyển nào tốt nhất?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "clarify",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bạn muốn đánh giá hãng vận chuyển tốt nhất theo tiêu chí nào: thời gian giao hàng trung bình nhanh nhất, tỷ lệ giao hàng thành công cao nhất, hay điểm đánh giá trung bình từ khách hàng?",
+      "attempts": 1,
+      "in_tokens": 2073,
+      "out_tokens": 240,
+      "latency_s": 3.96
+    },
+    {
+      "id": "o07",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Tỉ lệ khách quay lại mua hàng theo từng kênh marketing (Facebook, Google, TikTok) là bao nhiêu?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Cơ sở dữ liệu hiện không lưu trữ thông tin về kênh marketing hoặc nguồn thu hút khách hàng (Facebook, Google, TikTok).",
+      "attempts": 1,
+      "in_tokens": 2088,
+      "out_tokens": 203,
+      "latency_s": 3.24
+    },
+    {
+      "id": "o10",
+      "type": "out_of_scope",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Những từ khóa nào xuất hiện nhiều nhất trong nội dung các review?",
+      "correct": true,
+      "reason": "ok",
+      "behavior": "cannot_answer",
+      "pred_sql": null,
+      "gold_sql": null,
+      "message": "Bảng `reviews` trong cơ sở dữ liệu chỉ lưu trữ `rating` và thời gian tạo, không có cột lưu trữ nội dung/bình luận của đánh giá để phân tích từ khóa.",
+      "attempts": 1,
+      "in_tokens": 2079,
+      "out_tokens": 167,
+      "latency_s": 3.73
+    }
+  ]
+}

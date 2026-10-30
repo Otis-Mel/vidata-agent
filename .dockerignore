@@ -1,0 +1,7 @@
+.env
+.git
+__pycache__/
+*.pyc
+data/*.duckdb
+data/.llm_cache/
+eval/results/
